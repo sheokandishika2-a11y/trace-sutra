@@ -1,0 +1,7 @@
+/* TRACE SUTRA – evaluation core (no DOM). Labels come from the explicit "label" field (1 = mule, 0 = benign); the detector never reads it. */
+const FEAT=["fan-in","fan-out","share forwarded","pass-through delay","round-number share","account age","shared device","recruiter handle"];
+function collect(seeds,ev,prop){const o=[];seeds.forEach(sd=>Object.values(analyse(gen(sd,ev),prop).A).forEach(a=>o.push({f:a.f,y:a.label,s:a.score})));return o}
+function trainLR(X){let w=Array(9).fill(0);for(let it=0;it<500;it++){const g=Array(9).fill(0);X.forEach(r=>{const e=1/(1+Math.exp(-(w[8]+r.f.reduce((s,v,i)=>s+v*w[i],0))))-r.y;r.f.forEach((v,i)=>g[i]+=e*v);g[8]+=e});w=w.map((v,i)=>v-.8*g[i]/X.length)}return w}
+function met(rows,pred){let tp=0,fp=0,fn=0,tn=0;rows.forEach(r=>{const p=pred(r);if(p&&r.y)tp++;else if(p)fp++;else if(r.y)fn++;else tn++});const P=tp/(tp+fp||1),R=tp/(tp+fn||1);return{P,R,F:2*P*R/(P+R||1),tp,fp,fn,tn}}
+function runEval(){const tr=[1,2,3,4,5,6],te=[11,12,13,14,15,16,17,18],w=trainLR(collect(tr,0,0).concat(collect(tr,1,0))),lr=r=>1/(1+Math.exp(-(w[8]+r.f.reduce((s,v,i)=>s+v*w[i],0))))>=.5;
+const blocks=[0,1].map(ev=>{const A=collect(te,ev,0),B=collect(te,ev,1);return{ev,n:A.length,pos:A.filter(r=>r.y).length,rows:[["Rule score (explainable)",met(A,r=>r.s>=60)],["Rule score + graph propagation",met(B,r=>r.s>=60)],["Logistic regression (trained)",met(A,lr)]]}});return{blocks,w}}
